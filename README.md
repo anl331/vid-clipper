@@ -87,6 +87,54 @@ Open `http://localhost:5180` — that's it.
 
 ---
 
+## Customization
+
+![settings](dashboard/src/assets/settings.png)
+
+Everything is configurable from the Settings tab — no code edits needed.
+
+### Clip settings
+| Setting | What it does |
+|---|---|
+| **Max clips** | How many clips to generate per video (default: 5) |
+| **Min duration** | Shortest a clip can be, in seconds (default: 20s) |
+| **Max duration** | Longest a clip can be, in seconds (default: 90s) |
+| **AI model** | Which LLM picks the moments — swap anytime |
+
+### Video format
+| Setting | What it does |
+|---|---|
+| **Clip format** | `split` (top context + bottom face), `center` (tight face crop only), `fullscreen` (original framing scaled) |
+| **Crop anchor** | `auto` (face detection), `left`, `center`, or `right` — controls where the speaker is framed |
+
+### Captions
+| Setting | What it does |
+|---|---|
+| **Font** | Caption font (Squada One, Impact, Arial, etc.) |
+| **Font size** | Caption text size |
+| **Vertical margin** | How high/low captions sit on the frame |
+| **Words per line** | How many words appear at a time (caption chunk size) |
+| **Highlight** | Toggle word-by-word highlight on/off |
+| **Highlight color** | Color of the active word highlight |
+
+### Title card
+| Setting | What it does |
+|---|---|
+| **Title enabled** | Show/hide the clip title overlay |
+| **Title font** | Font for the title (can differ from captions) |
+| **Title font size** | Title text size |
+| **Title position** | `intro` (shows at start then fades) or `persistent` (stays on screen) |
+| **Intro duration** | How many seconds the title shows before fading (default: 3.5s) |
+| **Title margin** | Vertical position of the title on the frame |
+
+### Transcription
+| Setting | What it does |
+|---|---|
+| **Provider** | `local` (faster-whisper, free, private) or `groq` (cloud, ~10s for 1hr video) |
+| **Groq API key** | Optional — only needed for cloud transcription |
+
+---
+
 ## AI Models
 
 Any model on OpenRouter works. Pick based on speed vs quality:
