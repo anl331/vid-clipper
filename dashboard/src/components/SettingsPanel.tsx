@@ -18,6 +18,7 @@ const DEFAULTS: Settings = {
   min_duration: 45,
   max_duration: 90,
   openrouter_api_key: '',
+  groq_api_key: '',
   transcription_provider: 'local',
   caption_font_size: 78,
   caption_margin_v: 350,
@@ -64,6 +65,7 @@ export function SettingsPanel({ onSave }: { settings?: Settings; onSave: (s: Set
           max_duration: data.max_duration ?? DEFAULTS.max_duration,
           transcription_provider: data.transcription_provider || DEFAULTS.transcription_provider,
           openrouter_api_key: data.openrouter_api_key || '',
+          groq_api_key: data.groq_api_key || '',
           caption_font_size: data.caption_font_size ?? DEFAULTS.caption_font_size,
           caption_margin_v: data.caption_margin_v ?? DEFAULTS.caption_margin_v,
           caption_chunk_size: data.caption_chunk_size ?? DEFAULTS.caption_chunk_size,
@@ -279,9 +281,10 @@ export function SettingsPanel({ onSave }: { settings?: Settings; onSave: (s: Set
         </h3>
 
         <KeyInput label="OpenRouter API Key" field="openrouter_api_key" placeholder="sk-or-..." />
+        <KeyInput label="Groq (optional — faster transcription)" field="groq_api_key" placeholder="gsk_..." />
 
         <p className="text-xs text-white/20">
-          Your key is saved to settings.json and passed to the pipeline. Get one free at openrouter.ai
+          OpenRouter is required. Groq is optional — if set, uses cloud Whisper (~10s vs ~3min locally). Get keys at openrouter.ai and console.groq.com
         </p>
       </div>
 
