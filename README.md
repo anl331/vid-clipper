@@ -16,7 +16,7 @@ No cloud account required. Everything runs locally. One API key.
 
 ## Dashboard
 
-![dashboard](https://i.imgur.com/placeholder.png)
+![dashboard](dashboard/src/assets/dashaboard.png)
 
 Paste a URL, hit Clip, and watch the pipeline run in real time. Adjust clip count, duration, AI model, caption style, fonts, and more — all from the UI.
 
