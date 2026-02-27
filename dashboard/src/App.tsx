@@ -262,7 +262,7 @@ function App() {
                   value={videoUrl}
                   onChange={e => setVideoUrl(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && runPipeline()}
-                  placeholder="Paste YouTube URL..."
+                  placeholder="Paste video URL..."
                   className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 sm:px-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-blue-500/50 transition-colors"
                 />
                 <button
