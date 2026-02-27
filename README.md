@@ -2,7 +2,7 @@
 
 **AI-powered video clipper with a visual dashboard.** Paste a video URL, get short-form vertical clips with animated captions — ready to post anywhere.
 
-No cloud account required. Everything runs locally. One API key.
+No cloud account required. Everything runs locally. Works out of the box — no API key needed.
 
 ---
 
@@ -36,13 +36,15 @@ pip install -r requirements.txt
 cp settings.example.json settings.json
 ```
 
-Open `settings.json` and add your [OpenRouter](https://openrouter.ai) API key (free tier available):
+Open `settings.json`. No API key needed — it uses a free model by default. Optionally add an [OpenRouter](https://openrouter.ai) key for faster/better paid models:
 
 ```json
 {
-  "openrouter_api_key": "sk-or-v1-..."
+  "openrouter_api_key": ""
 }
 ```
+
+> **Free by default.** Leave `openrouter_api_key` blank and vid-clipper uses `google/gemini-2.0-flash-exp:free` automatically. Add a key to unlock paid models like Gemini Flash or Claude.
 
 ```bash
 # 3. Start the dashboard

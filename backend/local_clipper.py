@@ -726,9 +726,11 @@ def find_viral_moments_openrouter(segments: list[dict], max_clips: int = 5,
     For other models: chunks transcript into overlapping 40K windows and deduplicates.
     If video_path is provided, enriches transcript with audio energy peaks.
     """
+    FREE_MODEL = "google/gemini-2.0-flash-exp:free"
     if not api_key:
-        state_log("WARNING", "No OpenRouter API key — falling back to simple splitting. Add openrouter_api_key to settings.json for AI-powered clip selection.")
-        return find_viral_moments_fallback(segments, max_clips, min_duration, max_duration)
+        api_key = "no-key"
+        model = FREE_MODEL
+        state_log("INFO", f"No OpenRouter API key — using free model ({FREE_MODEL}). Set openrouter_api_key in settings for paid models.")
 
     from openai import OpenAI
 

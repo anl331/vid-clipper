@@ -280,11 +280,11 @@ export function SettingsPanel({ onSave }: { settings?: Settings; onSave: (s: Set
           API Keys
         </h3>
 
-        <KeyInput label="OpenRouter API Key" field="openrouter_api_key" placeholder="sk-or-..." />
+        <KeyInput label="OpenRouter API Key (optional)" field="openrouter_api_key" placeholder="sk-or-... (leave blank to use free model)" />
         <KeyInput label="Groq (optional — faster transcription)" field="groq_api_key" placeholder="gsk_..." />
 
         <p className="text-xs text-white/20">
-          OpenRouter is required. Groq is optional — if set, uses cloud Whisper (~10s vs ~3min locally). Get keys at openrouter.ai and console.groq.com
+          Leave OpenRouter blank to use a free model automatically. Add a key at openrouter.ai to unlock faster/better paid models. Groq is optional — speeds up transcription from ~3min to ~10s.
         </p>
       </div>
 

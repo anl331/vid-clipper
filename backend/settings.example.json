@@ -1,6 +1,6 @@
 {
-  "openrouter_api_key": "sk-or-v1-YOUR_KEY_HERE",
-  "model": "google/gemini-2.0-flash-001",
+  "openrouter_api_key": "",
+  "model": "google/gemini-2.0-flash-exp:free",
   "max_clips": 5,
   "min_duration": 20,
   "max_duration": 90,
