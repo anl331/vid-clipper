@@ -1,0 +1,22 @@
+{
+  "openrouter_api_key": "sk-or-v1-YOUR_KEY_HERE",
+  "model": "google/gemini-2.0-flash-001",
+  "max_clips": 5,
+  "min_duration": 45,
+  "max_duration": 90,
+  "transcription_provider": "local",
+  "caption_font_size": 76,
+  "caption_margin_v": 270,
+  "caption_chunk_size": 3,
+  "caption_highlight": true,
+  "title_enabled": true,
+  "title_font_size": 82,
+  "title_margin_v": 140,
+  "caption_highlight_color": "#2b7eff",
+  "caption_font": "Squada One",
+  "title_font": "Squada One",
+  "clip_format": "split",
+  "title_intro_duration": 3.5,
+  "title_position": "intro",
+  "crop_anchor": "auto"
+}

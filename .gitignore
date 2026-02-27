@@ -1,0 +1,24 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Backend runtime files
+backend/clips/
+backend/logs/
+backend/video_cache/
+backend/pipeline_state*.json
+backend/pipeline_history.json
+backend/state.json
+backend/settings.json
+backend/cookies.txt
+backend/*.tflite
+backend/*.pt
+
+# Dashboard
+dashboard/node_modules/
+dashboard/dist/
+
+# OS
+.DS_Store

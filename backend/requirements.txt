@@ -1,0 +1,5 @@
+faster-whisper
+yt-dlp
+feedparser
+requests
+openai
