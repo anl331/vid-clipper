@@ -6,13 +6,7 @@ import { ActiveJobCard } from './components/ActiveJobCard'
 import { Scissors, Zap, Settings as SettingsIcon, ClipboardList, Play, Loader2, Clock, Inbox } from 'lucide-react'
 import { useUIStore } from './store/useClipperStore'
 import type { Settings, HistoryEntry, JobState } from './types'
-import { useLocalJobs, HAS_CONVEX, mapLocalJob } from './hooks/useJobs'
-
-// Convex is optional — only imported when VITE_CONVEX_URL is set
-let useConvexJobs: (() => ReturnType<typeof useLocalJobs>) | null = null
-if (HAS_CONVEX) {
-  // Dynamic convex usage — defined below in ConvexApp wrapper
-}
+import { useLocalJobs, mapLocalJob } from './hooks/useJobs'
 
 function App() {
   const { expandedJobs, toggleExpanded } = useUIStore()

@@ -1,79 +1,86 @@
-# clipper
+# vid-clipper
 
-Automatically clips YouTube videos into short-form vertical content using AI. Includes a visual dashboard to manage jobs, tweak settings, and preview clips.
+**AI-powered video clipper with a visual dashboard.** Paste a video URL, get short-form vertical clips with animated captions — ready to post anywhere.
 
-![dashboard preview](https://i.imgur.com/placeholder.png)
+No cloud account required. Everything runs locally. One API key.
 
-## How it works
+---
 
-1. Paste a YouTube URL (or add channels to monitor)
-2. The pipeline downloads the video, transcribes it locally, and uses an LLM to find the best moments
-3. Clips are rendered as vertical 9:16 video with animated captions
-4. Preview and download from the dashboard
+## What it does
 
-## Requirements
+- Downloads any video (YouTube, and more)
+- Transcribes it locally using [faster-whisper](https://github.com/guillaumekynast/faster-whisper) — no API key, runs on your machine
+- Uses an LLM (via [OpenRouter](https://openrouter.ai)) to find the best moments worth clipping
+- Renders 9:16 vertical clips with animated word-by-word captions
+- Visual dashboard to manage jobs, preview clips, and tweak settings
 
-- Python 3.10+
-- Node.js 18+
-- `ffmpeg` — `brew install ffmpeg` or `apt install ffmpeg`
-- One API key: [OpenRouter](https://openrouter.ai) (free tier available)
+## Dashboard
 
-Transcription runs locally with `faster-whisper` — no extra API key needed.
+![dashboard](https://i.imgur.com/placeholder.png)
 
-## Setup
+Paste a URL, hit Clip, and watch the pipeline run in real time. Adjust clip count, duration, AI model, caption style, fonts, and more — all from the UI.
 
-### 1. Backend
+## Quick Start
+
+**Requirements:** Python 3.10+, Node.js 18+, ffmpeg
 
 ```bash
-cd backend
+# 1. Install ffmpeg
+brew install ffmpeg        # macOS
+apt install ffmpeg         # Linux
+
+# 2. Clone and set up backend
+git clone https://github.com/anl331/vid-clipper.git
+cd vid-clipper/backend
 pip install -r requirements.txt
 cp settings.example.json settings.json
 ```
 
-Edit `settings.json` and add your OpenRouter key:
+Open `settings.json` and add your [OpenRouter](https://openrouter.ai) API key (free tier available):
 
 ```json
 {
-  "openrouter_api_key": "sk-or-v1-...",
-  "model": "google/gemini-2.0-flash-001"
+  "openrouter_api_key": "sk-or-v1-..."
 }
 ```
 
-### 2. Dashboard
-
 ```bash
-cd dashboard
+# 3. Start the dashboard
+cd ../dashboard
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5176` in your browser.
+Open `http://localhost:5180` — that's it.
 
 ## CLI (no dashboard)
 
 ```bash
-# Clip a specific video
+# Clip a video directly
 python3 backend/clipper.py add "https://youtube.com/watch?v=..."
 
-# Monitor channels for new videos
-python3 backend/clipper.py scan
-
-# Add a channel to monitor
-python3 backend/clipper.py add-creator @channelhandle
-
-# View status
+# Check status
 python3 backend/clipper.py status
 ```
 
-## Models
+## AI Models
 
-Any model on OpenRouter works. Recommended:
+Any model on OpenRouter works. Pick based on speed vs quality:
 
-| Model | Speed | Quality |
-|---|---|---|
-| `google/gemini-2.0-flash-001` | Fast | Great |
-| `anthropic/claude-3.5-sonnet` | Medium | Excellent |
-| `openai/gpt-4o` | Medium | Excellent |
+| Model | Speed | Quality | Notes |
+|---|---|---|---|
+| `google/gemini-2.0-flash-001` | Fast | Great | Default, best all-around |
+| `google/gemini-2.5-flash` | Fast | Excellent | Newer, slightly better |
+| `anthropic/claude-3.5-sonnet` | Medium | Excellent | Best for nuanced content |
+| `openai/gpt-4o` | Medium | Excellent | Solid alternative |
+
+Switch models anytime from the Settings tab — or per-job from the clip form.
+
+## Transcription
+
+By default, transcription runs locally using `faster-whisper` — free, private, no API key needed. It takes ~3 min for a 20-min video on a modern machine.
+
+Want faster transcription? Add a [Groq](https://console.groq.com) API key in Settings. Groq's Whisper API is free and cuts that to ~10 seconds.
 
 ## Output
 
@@ -82,9 +89,19 @@ Clips are saved to `backend/clips/<video_id>/`:
 ```
 backend/clips/
   dQw4w9WgXcQ/
-    clip_01_Hook_moment.mp4
+    clip_01_The_hook_moment.mp4
     clip_02_Key_insight.mp4
 ```
+
+## Tech Stack
+
+- **Backend:** Python, yt-dlp, ffmpeg, faster-whisper, OpenRouter
+- **Dashboard:** React, Vite, Tailwind CSS
+- **Storage:** Local JSON files — no database, no cloud required
+
+## Contributing
+
+PRs welcome. Open an issue first for big changes.
 
 ## License
 
