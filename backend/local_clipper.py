@@ -1107,11 +1107,12 @@ def _parse_moments(text: str, max_clips: int) -> tuple[list[dict], str]:
     for i, m in enumerate(moments):
         title = m.get("title", "")
         if not title or _generic_title.match(title.strip()):
-            # Build a fallback title from the reason field or just a numbered placeholder
+            # Build a fallback title from the reason field
             reason = m.get("reason", "")
             if reason and len(reason) > 10:
-                # Truncate reason to a punchy title-length string
-                m["title"] = reason[:60].rsplit(" ", 1)[0] if len(reason) > 60 else reason
+                # Take first 6 words and title-case them
+                words_r = reason.split()
+                m["title"] = " ".join(words_r[:6]).rstrip(".,;:").title()
             else:
                 m["title"] = f"Moment {i + 1}"
 
