@@ -6,14 +6,13 @@ import './index.css'
 import { SettingsPanel } from './components/SettingsPanel'
 import { JobHistory } from './components/JobHistory'
 import { ActiveJobCard } from './components/ActiveJobCard'
-import { CreatorsPanel } from './components/CreatorsPanel'
-import { Scissors, Zap, Users, Settings as SettingsIcon, ClipboardList, Play, Loader2, Clock, Eye, Inbox } from 'lucide-react'
+import { Scissors, Zap, Settings as SettingsIcon, ClipboardList, Play, Loader2, Clock, Inbox } from 'lucide-react'
 import { useUIStore } from './store/useClipperStore'
 import type { Settings, HistoryEntry, JobState } from './types'
 
 function App() {
   const { expandedJobs, toggleExpanded } = useUIStore()
-  const [tab, setTab] = useState<'pipeline' | 'creators' | 'settings' | 'history'>('pipeline')
+  const [tab, setTab] = useState<'pipeline' | 'settings' | 'history'>('pipeline')
   const [fileSettings, setFileSettings] = useState<Settings | null>(null)
 
   // Load from local file on mount — this is the authoritative source
@@ -35,7 +34,7 @@ function App() {
 
   // Convex real-time queries
   const allJobs = useQuery(api.jobs.list, {})
-  const convexCreators = useQuery(api.creators.list, {})
+
   const convexSettings = useQuery(api.settings.get, {})
 
   // Convex mutations
@@ -348,7 +347,6 @@ function App() {
 
   const tabs = [
     { id: 'pipeline' as const, label: 'New Clip', icon: Scissors },
-    { id: 'creators' as const, label: 'Creators', icon: Users },
     { id: 'history' as const, label: 'History', icon: ClipboardList },
     { id: 'settings' as const, label: 'Settings', icon: SettingsIcon },
   ]
@@ -546,7 +544,6 @@ function App() {
             )}
           </div>
         )}
-        {tab === 'creators' && <CreatorsPanel />}
         {tab === 'settings' && <SettingsPanel settings={settings} onSave={saveSettings} />}
         {tab === 'history' && (
           <div className="space-y-8">

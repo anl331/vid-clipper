@@ -151,44 +151,7 @@ export default defineConfig({
           }
         })
 
-        // GET/POST /api/creators
-        server.middlewares.use('/api/creators', (req, res) => {
-          const file = path.join(clipperDir, 'creators.json')
-          if (req.method === 'POST') {
-            let body = ''
-            req.on('data', (c: Buffer) => body += c)
-            req.on('end', () => {
-              try {
-                const { action, creator, youtube_handle } = JSON.parse(body)
-                let data: any = { creators: [] }
-                try { data = JSON.parse(fs.readFileSync(file, 'utf-8')) } catch {}
-                if (action === 'add' && creator) {
-                  data.creators.push(creator)
-                } else if (action === 'remove' && youtube_handle) {
-                  data.creators = data.creators.filter((c: any) => c.youtube_handle !== youtube_handle)
-                }
-                fs.writeFileSync(file, JSON.stringify(data, null, 2))
-                res.setHeader('Content-Type', 'application/json')
-                res.end(JSON.stringify({ ok: true }))
-              } catch (e: any) {
-                res.statusCode = 500
-                res.end(JSON.stringify({ error: e.message }))
-              }
-            })
-          } else {
-            try {
-              const data = JSON.parse(fs.readFileSync(file, 'utf-8'))
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify(data))
-            } catch {
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ creators: [] }))
-            }
-          }
-          return
-        })
-
-        // GET /api/fonts/file/:filename — serve individual font files for browser preview
+                // GET /api/fonts/file/:filename — serve individual font files for browser preview
         server.middlewares.use('/api/fonts/file', (req, res, next) => {
           const filename = (req.url || '').replace(/^\//, '').split('?')[0]
           if (!filename) { next(); return }
