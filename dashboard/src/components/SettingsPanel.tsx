@@ -18,9 +18,7 @@ const DEFAULTS: Settings = {
   min_duration: 45,
   max_duration: 90,
   openrouter_api_key: '',
-  groq_api_key: '',
-  gemini_api_key: '',
-  transcription_provider: 'groq',
+  transcription_provider: 'local',
   caption_font_size: 78,
   caption_margin_v: 350,
   caption_chunk_size: 3,
@@ -66,8 +64,6 @@ export function SettingsPanel({ onSave }: { settings?: Settings; onSave: (s: Set
           max_duration: data.max_duration ?? DEFAULTS.max_duration,
           transcription_provider: data.transcription_provider || DEFAULTS.transcription_provider,
           openrouter_api_key: data.openrouter_api_key || '',
-          groq_api_key: data.groq_api_key || '',
-          gemini_api_key: data.gemini_api_key || '',
           caption_font_size: data.caption_font_size ?? DEFAULTS.caption_font_size,
           caption_margin_v: data.caption_margin_v ?? DEFAULTS.caption_margin_v,
           caption_chunk_size: data.caption_chunk_size ?? DEFAULTS.caption_chunk_size,
@@ -282,12 +278,10 @@ export function SettingsPanel({ onSave }: { settings?: Settings; onSave: (s: Set
           API Keys
         </h3>
 
-        <KeyInput label="OpenRouter" field="openrouter_api_key" placeholder="sk-or-..." />
-        <KeyInput label="Groq (transcription)" field="groq_api_key" placeholder="gsk_..." />
-        <KeyInput label="Gemini (fallback)" field="gemini_api_key" placeholder="AIza..." />
+        <KeyInput label="OpenRouter API Key" field="openrouter_api_key" placeholder="sk-or-..." />
 
         <p className="text-xs text-white/20">
-          Keys are saved to settings.json and passed to the pipeline. They override environment variables.
+          Your key is saved to settings.json and passed to the pipeline. Get one free at openrouter.ai
         </p>
       </div>
 
