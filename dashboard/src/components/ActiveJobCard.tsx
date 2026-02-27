@@ -15,7 +15,7 @@ const STEP_LABELS: Record<string, string> = {
   transcribing: 'STT',
   analyzing: 'AI',
   clipping: 'Clip',
-  uploading: 'R2',
+  uploading: 'Saving',
 }
 
 function ElapsedTime({ since }: { since: string }) {

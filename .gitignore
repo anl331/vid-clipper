@@ -24,3 +24,4 @@ dashboard/dist/
 .DS_Store
 dashboard/.env.local
 dashboard/convex/_generated/
+.wrangler/

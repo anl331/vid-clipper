@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { HistoryEntry, ClipInfo, LogEntry } from '../types'
 import { ClipboardList, ChevronRight, ChevronDown, CheckCircle, AlertCircle, Clock, Film, Download, Mic, Brain, Scissors, Check, Terminal, HardDrive, ExternalLink, Trash2, RotateCcw } from 'lucide-react'
 
-const STEPS_ORDER = ['downloading', 'transcribing', 'analyzing', 'clipping', 'uploading'] as const
+const STEPS_ORDER = ['downloading', 'transcribing', 'analyzing', 'clipping'] as const
 
 const STEP_ICONS: Record<string, typeof Download> = {
   downloading: Download,
@@ -288,14 +288,12 @@ export function JobHistory({ history, title = 'Job History', expanded: externalE
                       {totalDuration(h)}
                     </span>
                   )}
-                  {h.model && (
+
+                  {h.started_at && (
                     <span className="bg-white/[0.06] px-1.5 sm:px-2 py-0.5 rounded-md hidden sm:block">
-                      {shortModelName(h.model)}
+                      {new Date(h.started_at).toLocaleDateString()}
                     </span>
                   )}
-                  <span className="bg-white/[0.06] px-1.5 sm:px-2 py-0.5 rounded-md hidden sm:block">
-                    {h.started_at ? new Date(h.started_at).toLocaleDateString() : ''}
-                  </span>
                 </div>
                 {/* Retry button — error rows only */}
                 {onRetry && h.status === 'error' && h.video_url && (

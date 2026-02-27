@@ -762,10 +762,12 @@ def find_viral_moments_openrouter(segments: list[dict], max_clips: int = 5,
     elif len(transcript) > 40000:
         # Non-Gemini models: chunk into overlapping windows
         state_log("INFO", f"Transcript {len(transcript)} chars — chunking for {model}")
+        _vd = max((s.get("end", 0) for s in segments), default=0)
         return _chunked_openrouter_analysis(client, model, transcript, segments,
-                                             max_clips, min_duration, max_duration, api_key)
+                                             max_clips, min_duration, max_duration, api_key, video_duration=_vd)
 
-    prompt = _build_moment_prompt(transcript, max_clips, min_duration, max_duration)
+    video_duration = max((s.get("end", 0) for s in segments), default=0)
+    prompt = _build_moment_prompt(transcript, max_clips, min_duration, max_duration, video_duration=video_duration)
 
     try:
         state_log("INFO", f"Calling OpenRouter ({model})...")
@@ -787,7 +789,7 @@ def find_viral_moments_openrouter(segments: list[dict], max_clips: int = 5,
 
 def _chunked_openrouter_analysis(client, model: str, transcript: str, segments: list[dict],
                                   max_clips: int, min_duration: int, max_duration: int,
-                                  api_key: str) -> tuple[list[dict], str]:
+                                  api_key: str, video_duration: float = 0.0) -> tuple[list[dict], str]:
     """For non-Gemini models: chunk transcript into overlapping 40K windows,
     run LLM on each, collect candidates, then dedup/rank to pick the best N."""
     chunk_size = 40000
@@ -806,7 +808,7 @@ def _chunked_openrouter_analysis(client, model: str, transcript: str, segments: 
     all_candidates = []
     content_types = []
     for i, chunk in enumerate(chunks):
-        prompt = _build_moment_prompt(chunk, max_clips, min_duration, max_duration)
+        prompt = _build_moment_prompt(chunk, max_clips, min_duration, max_duration, video_duration=video_duration)
         try:
             response = client.chat.completions.create(
                 model=model,
@@ -1022,10 +1024,11 @@ WHAT MAKES A BAD CLIP (NEVER select these):
 - Clips that require watching the rest of the video to understand
 
 DURATION RULES:
-- MINIMUM {min_duration} seconds. Shorter clips are REJECTED.
-- TARGET 50-75 seconds (TikTok sweet spot)
+- MINIMUM {min_duration} seconds. Try hard to find segments this long.
+- TARGET 45-75 seconds (TikTok sweet spot)
 - MAXIMUM {max_duration} seconds
 - Pad 2-3 seconds before the speaker starts and after they finish
+- If a great moment is slightly under {min_duration}s, extend it by including surrounding context to hit the minimum.
 {f"- VIDEO LENGTH: {video_duration:.0f}s ({video_duration/60:.0f} min). ALL start/end values MUST be below {video_duration:.0f}s — never hallucinate past the end." if video_duration > 0 else ""}
 
 Return JSON object with "content_type" and "clips" keys. No markdown fences. Just JSON.
@@ -1044,7 +1047,7 @@ Also include "peak_offset": seconds from the clip's start time to the single mos
   {{"start": 200.0, "end": 265.0, "title": "Another title", "reason": "Why this works", "hook_score": 6, "hook_reason": "Good setup but slightly generic", "peak_offset": null}}
 ]}}
 
-Find UP TO {max_clips} best clips. Prefer fewer GREAT clips over hitting the number. No overlapping clips.
+IMPORTANT: You MUST return EXACTLY {max_clips} clips if the video has enough content. Spread the clips across the ENTIRE video (beginning, middle, and end). Do not cluster all clips at the start. Each clip must be from a different section of the video. No overlapping clips. If the video is too short for {max_clips} non-overlapping clips that meet the duration rules, return as many as genuinely fit (minimum 1).
 
 TRANSCRIPT:
 {transcript}"""
@@ -1629,21 +1632,24 @@ def detect_face_bbox(video_path: str, start: float, end: float) -> Optional[tupl
         # layout, not something we can fix with a static crop.
         xs, ys, ws, hs = bboxes[0]
 
-        # Add 20% padding around the face/person (tight enough to stay on webcam box)
-        pad_x = ws * 0.20
-        pad_y = hs * 0.20
+        # For talking-head clips the face/shoulders occupy the top ~70% of the YOLO person bbox.
+        # Use only that region — avoids showing too much torso below.
+        face_h = hs * 0.80       # top 80% of person bbox = head + neck + shoulders
+        pad_x = ws * 0.06        # 6% each side horizontally
+        pad_y_top = face_h * 0.04  # small room above head
+        pad_y_bot = face_h * 0.10  # some room below shoulders
         cx = xs + ws / 2
-        cy = ys + hs / 2
+        cy = ys + face_h / 2    # center on face region (top of bbox + half face height)
         new_w = ws + pad_x * 2
-        new_h = hs + pad_y * 2
+        new_h = face_h + pad_y_top + pad_y_bot
 
-        # Enforce minimum size (at least 15% of video width) to avoid over-zooming tiny detections
-        new_w = max(new_w, vid_w * 0.15)
-        new_h = max(new_h, vid_h * 0.15)
+        # Enforce minimum size (at least 10% of video width) to avoid over-zooming tiny detections
+        new_w = max(new_w, vid_w * 0.10)
+        new_h = max(new_h, vid_h * 0.10)
 
-        # If the detected region is > 60% of the frame, the person is full-screen
+        # If the detected region is > 75% of the frame, the person is full-screen
         # (e.g. a large body bbox in a whole-screen recording). No useful tight zoom possible.
-        if new_w > vid_w * 0.60 or new_h > vid_h * 0.60:
+        if new_w > vid_w * 0.75 or new_h > vid_h * 0.75:
             raise ValueError(f"Person too large for tight zoom ({new_w:.0f}x{new_h:.0f}), using x-only fallback")
 
         # Cap to video dimensions before computing final coords

@@ -79,18 +79,19 @@ function App() {
   const [loadingPreview, setLoadingPreview] = useState(false)
 
   const [cacheStatus, setCacheStatus] = useState<{ cached: boolean; model: string | null; moments: number } | null>(null)
+  const [forceReanalyze, setForceReanalyze] = useState(false)
 
   // Check cache status whenever preview changes (has video_id)
   useEffect(() => {
-    if (!preview?.video_id) { setCacheStatus(null); return }
+    if (!preview?.video_id) { setCacheStatus(null); setForceReanalyze(false); return }
     fetch(`/api/cache-status?videoId=${preview.video_id}`)
       .then(r => r.json())
       .then(data => setCacheStatus(data))
       .catch(() => setCacheStatus(null))
   }, [preview?.video_id])
 
-  // Auto-derive re-analyze: cache exists + user explicitly picked a different model
-  const reanalyze = !!(cacheStatus?.cached && jobModel && jobModel !== (cacheStatus?.model || ''))
+  // Re-analyze if: user forced it, OR cache exists + user picked a different model
+  const reanalyze = forceReanalyze || !!(cacheStatus?.cached && jobModel && jobModel !== (cacheStatus?.model || ''))
   const [optimisticJob, setOptimisticJob] = useState<JobState | null>(null)
 
   useEffect(() => {
@@ -306,8 +307,19 @@ function App() {
                     )}
                     {reanalyze && (
                       <span className="ml-1 flex items-center gap-1 text-[10px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
-                        🔄 will re-analyze with {jobModel.split('/').pop()}
+                        🔄 will re-analyze
                       </span>
+                    )}
+                    {cacheStatus?.cached && (
+                      <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={forceReanalyze}
+                          onChange={e => setForceReanalyze(e.target.checked)}
+                          className="w-3 h-3 accent-amber-400"
+                        />
+                        <span className="text-[10px] text-white/30">Force re-analyze</span>
+                      </label>
                     )}
                   </div>
                   <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3">

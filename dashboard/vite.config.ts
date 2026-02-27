@@ -453,7 +453,12 @@ export default defineConfig({
               }).catch(() => {})
 
               // Use full path since Node spawn doesn't inherit shell PATH
-              const python = process.env.PYTHON_PATH || 'python3'
+              const python = process.env.PYTHON_PATH || (() => {
+                for (const c of ['/opt/homebrew/bin/python3', '/usr/bin/python3', '/usr/local/bin/python3', 'python3']) {
+                  try { spawnSync(c, ['--version'], { stdio: 'ignore' }); return c } catch {}
+                }
+                return 'python3'
+              })()
               const proc = spawn(python, args, { cwd: clipperDir, env: envVars, stdio: ['ignore', 'pipe', 'pipe'] })
 
               activeJobs.set(jobId, { id: jobId, process: proc, videoId, url, startedAt: new Date().toISOString() })
@@ -523,52 +528,26 @@ export default defineConfig({
 
               const results: string[] = []
 
-              // 1. Delete R2 clips (wrangler r2 object delete)
-              const envVars = { ...process.env }
-              try {
-                const zshrc = fs.readFileSync(path.join(process.env.HOME!, '.zshrc'), 'utf-8')
-                for (const match of zshrc.matchAll(/export\s+(\w+)="([^"]*)"/g)) {
-                  envVars[match[1]] = match[2]
-                }
-              } catch {}
-
+              // 1. Delete local clip files
               for (const clip of clips) {
-                const fname = clip.filename || path.basename(clip.path || '')
-                if (!fname) continue
-                const vid = videoId || 'unknown'
-                const r2Key = `clipper-clips/default/${vid}/${fname}`
-                try {
-                  const { spawnSync } = await import('child_process')
-                  const result = spawnSync('wrangler', ['r2', 'object', 'delete', r2Key], { env: envVars, encoding: 'utf-8' })
-                  if (result.status === 0) {
-                    results.push(`R2 deleted: ${fname}`)
-                  } else {
-                    results.push(`R2 skip/error: ${fname}`)
-                  }
-                } catch { results.push(`R2 error: ${fname}`) }
-
-                // Also delete local file
                 if (clip.path) {
-                  try { fs.unlinkSync(clip.path) } catch {}
+                  try { fs.unlinkSync(clip.path); results.push(`Deleted: ${path.basename(clip.path)}`) } catch {}
                 }
+              }
+
+              // Delete the whole clip folder for this video if empty
+              if (videoId) {
+                const clipFolder = path.join(clipsDir, videoId)
+                try {
+                  const remaining = fs.readdirSync(clipFolder)
+                  if (remaining.length === 0) fs.rmdirSync(clipFolder)
+                } catch {}
               }
 
               // Delete local pipeline state file
               try { fs.unlinkSync(path.join(clipperDir, `pipeline_state_${jobId}.json`)) } catch {}
 
-              // 2. Delete from Convex
-              try {
-                const convexCloudUrl = process.env.CONVEX_CLOUD_URL || 'https://veracious-sardine-771.convex.cloud'
-                const resp = await fetch(`${convexCloudUrl}/api/mutation`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ path: 'jobs:remove', args: { jobId }, format: 'json' }),
-                })
-                const data = await resp.json() as any
-                if (data.status === 'success') results.push('Convex deleted')
-              } catch { results.push('Convex error') }
-
-              // 3. Remove from local history file
+              // 2. Remove from local history file
               try {
                 const histFile = path.join(clipperDir, 'pipeline_history.json')
                 let hist: any[] = []
