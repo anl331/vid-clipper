@@ -103,9 +103,23 @@ Switch models anytime from the Settings tab — or per-job from the clip form.
 
 ---
 
+## Speed
+
+On a modern machine (M-series Mac or equivalent), a 1-hour video goes from URL to 5 finished clips in under 2 minutes:
+
+| Step | Time |
+|---|---|
+| Download | ~15s |
+| Transcription (Groq) | ~10s |
+| AI clip selection | ~15s |
+| Rendering 5 clips | ~60s |
+| **Total** | **~2 min** |
+
+Running transcription locally (no Groq key) adds ~3 min for a 1-hour video. Everything else stays the same.
+
 ## Transcription
 
-By default, transcription runs locally using `faster-whisper` — free, private, no API key needed. It takes ~3 min for a 20-min video on a modern machine.
+By default, transcription runs locally using `faster-whisper` — free, private, no API key needed. It takes ~3 min for a 1-hour video on a modern machine.
 
 Want faster transcription? Add a [Groq](https://console.groq.com) API key in Settings. Groq's Whisper API is free and cuts that to ~10 seconds.
 
