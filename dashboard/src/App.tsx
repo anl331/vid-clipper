@@ -1,7 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useQuery, useMutation } from 'convex/react'
-import { api } from '../convex/_generated/api'
-import { encryptKey, decryptKey, ENCRYPTION_PASSPHRASE } from './lib/crypto'
+import { useState, useEffect } from 'react'
 import './index.css'
 import { SettingsPanel } from './components/SettingsPanel'
 import { JobHistory } from './components/JobHistory'
@@ -9,13 +6,20 @@ import { ActiveJobCard } from './components/ActiveJobCard'
 import { Scissors, Zap, Settings as SettingsIcon, ClipboardList, Play, Loader2, Clock, Inbox } from 'lucide-react'
 import { useUIStore } from './store/useClipperStore'
 import type { Settings, HistoryEntry, JobState } from './types'
+import { useLocalJobs, HAS_CONVEX, mapLocalJob } from './hooks/useJobs'
+
+// Convex is optional — only imported when VITE_CONVEX_URL is set
+let useConvexJobs: (() => ReturnType<typeof useLocalJobs>) | null = null
+if (HAS_CONVEX) {
+  // Dynamic convex usage — defined below in ConvexApp wrapper
+}
 
 function App() {
   const { expandedJobs, toggleExpanded } = useUIStore()
   const [tab, setTab] = useState<'pipeline' | 'settings' | 'history'>('pipeline')
   const [fileSettings, setFileSettings] = useState<Settings | null>(null)
 
-  // Load from local file on mount — this is the authoritative source
+  // Load settings from local file
   useEffect(() => {
     fetch('/api/settings')
       .then(r => r.json())
@@ -24,7 +28,7 @@ function App() {
         max_clips: data.max_clips ?? 5,
         min_duration: data.min_duration ?? 45,
         max_duration: data.max_duration ?? 90,
-        transcription_provider: data.transcription_provider || 'groq',
+        transcription_provider: data.transcription_provider || 'local',
         openrouter_api_key: data.openrouter_api_key || '',
         groq_api_key: data.groq_api_key || '',
         gemini_api_key: data.gemini_api_key || '',
@@ -32,86 +36,9 @@ function App() {
       .catch(() => {})
   }, [])
 
-  // Convex real-time queries
-  const allJobs = useQuery(api.jobs.list, {})
+  // Job data — local polling (no Convex required)
+  const { activeJobs: localActiveJobs, history, deleteJob, stopJob: stopLocalJob, clearHistory, retryJob: retryLocalJob } = useLocalJobs()
 
-  const convexSettings = useQuery(api.settings.get, {})
-
-  // Convex mutations
-  const clearByStatus = useMutation(api.jobs.clearByStatus)
-  const removeJob = useMutation(api.jobs.remove)
-  const saveSettingsMutation = useMutation(api.settings.save)
-
-  // Transform Convex data to match existing component interfaces
-  const jobs: JobState[] = (allJobs || [])
-    .filter((j: any) => j.status !== 'done' && j.status !== 'error' && j.status !== 'idle')
-    .map((j: any) => ({
-      jobId: j.jobId,
-      status: j.status,
-      video_url: j.videoUrl,
-      video_title: j.videoTitle,
-      thumbnail: j.thumbnail,
-      channel: j.channel,
-      error: j.error,
-      steps: j.steps || {},
-      logs: j.logs || [],
-      clips: (j.clips || []).map((c: any) => ({ ...c, size_bytes: c.sizeBytes })),
-      isActive: j.status !== 'done' && j.status !== 'error' && j.status !== 'idle',
-      settings: {},
-    }))
-
-  const history: HistoryEntry[] = (allJobs || [])
-    .filter((j: any) => j.status === 'done' || j.status === 'error')
-    .map((j: any) => ({
-      id: j.jobId,
-      video_url: j.videoUrl,
-      video_title: j.videoTitle || '',
-      thumbnail: j.thumbnail,
-      channel: j.channel,
-      status: j.status,
-      started_at: j.startedAt || '',
-      ended_at: j.endedAt,
-      model: j.model || '',
-      clips_count: j.clipsCount,
-      clips: (j.clips || []).map((c: any) => ({ ...c, size_bytes: c.sizeBytes })),
-      steps: j.steps || {},
-      logs: j.logs || [],
-    }))
-    // Newest completions first — ensures just-finished jobs always surface at the top
-    .sort((a, b) => {
-      const ta = a.ended_at || a.started_at || ''
-      const tb = b.ended_at || b.started_at || ''
-      return tb.localeCompare(ta)
-    })
-
-  // Decrypt API keys from Convex
-  const [decryptedKeys, setDecryptedKeys] = useState<{
-    openrouter: string; groq: string; gemini: string;
-  }>({ openrouter: '', groq: '', gemini: '' })
-
-  useEffect(() => {
-    if (!convexSettings) return
-    const isEncrypted = convexSettings.keysEncrypted
-    if (isEncrypted) {
-      Promise.all([
-        decryptKey(convexSettings.openrouterApiKey || '', ENCRYPTION_PASSPHRASE),
-        decryptKey(convexSettings.groqApiKey || '', ENCRYPTION_PASSPHRASE),
-        decryptKey(convexSettings.geminiApiKey || '', ENCRYPTION_PASSPHRASE),
-      ]).then(([openrouter, groq, gemini]) => {
-        setDecryptedKeys({ openrouter, groq, gemini })
-      })
-    } else {
-      // Not yet encrypted (legacy/seeded data), show as-is
-      setDecryptedKeys({
-        openrouter: convexSettings.openrouterApiKey || '',
-        groq: convexSettings.groqApiKey || '',
-        gemini: convexSettings.geminiApiKey || '',
-      })
-    }
-  }, [convexSettings])
-
-  // Settings come ONLY from the local file — Convex is write-only for settings.
-  // This prevents Convex re-renders from stomping over user edits or showing stale values.
   const settings: Settings = fileSettings ?? {
     model: 'google/gemini-2.0-flash-001',
     max_clips: 5,
@@ -120,51 +47,16 @@ function App() {
     openrouter_api_key: '',
     groq_api_key: '',
     gemini_api_key: '',
-    transcription_provider: 'groq' as const,
+    transcription_provider: 'local' as const,
   }
 
   const saveSettings = async (s: Settings) => {
-    // Encrypt API keys before saving to Convex
-    const [encOpenrouter, encGroq, encGemini] = await Promise.all([
-      encryptKey(s.openrouter_api_key || '', ENCRYPTION_PASSPHRASE),
-      encryptKey(s.groq_api_key || '', ENCRYPTION_PASSPHRASE),
-      encryptKey(s.gemini_api_key || '', ENCRYPTION_PASSPHRASE),
-    ])
-    saveSettingsMutation({
-      model: s.model,
-      maxClips: s.max_clips,
-      minDuration: s.min_duration,
-      maxDuration: s.max_duration,
-      transcriptionProvider: s.transcription_provider,
-      openrouterApiKey: encOpenrouter || undefined,
-      groqApiKey: encGroq || undefined,
-      geminiApiKey: encGemini || undefined,
-    })
-    // Save PLAINTEXT to local settings.json for the Python pipeline
-    fetch('/api/settings', {
+    await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(s),
     })
-    // Update local state immediately so panel reflects saved values
     setFileSettings(s)
-  }
-
-  const clearHistory = (status: string) => {
-    clearByStatus({ status })
-  }
-
-  const deleteJob = async (jobId: string, clips: any[], videoId?: string) => {
-    // Call local API to delete R2 files + Convex record + local files
-    try {
-      await fetch('/api/delete-job', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, clips, videoId }),
-      })
-    } catch {}
-    // Also remove from Convex directly (via mutation) in case API call was slow
-    removeJob({ jobId })
   }
 
   const [videoUrl, setVideoUrl] = useState('')
@@ -227,11 +119,9 @@ function App() {
   useEffect(() => {
     if (!optimisticJob) return
     const url = optimisticJob.video_url
-    const found = (allJobs || []).some(
-      (j: any) => j.videoUrl === url && !j.jobId?.startsWith('optimistic-')
-    )
+    const found = localActiveJobs.some(j => j.video_url === url && !j.jobId?.startsWith('optimistic-'))
     if (found) setOptimisticJob(null)
-  }, [allJobs, optimisticJob])
+  }, [localActiveJobs, optimisticJob])
 
   const formatDuration = (s: number) => {
     const h = Math.floor(s / 3600)
@@ -308,41 +198,10 @@ function App() {
     }
   }
 
-  const retryJob = async (url: string) => {
-    try {
-      const res = await fetch('/api/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          max_clips: settings.max_clips,
-          min_duration: settings.min_duration,
-          max_duration: settings.max_duration,
-        })
-      })
-      const data = await res.json()
-      if (!data.ok) alert(data.error || 'Failed to retry')
-    } catch (e: any) {
-      alert(e.message)
-    }
-  }
-
-  const updateJob = useMutation(api.jobs.update)
+  const retryJob = retryLocalJob
 
   const stopJob = async (jobId: string) => {
-    // Try to stop local process first
-    const res = await fetch('/api/stop', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId })
-    })
-    // Also mark as error in Convex (handles stale jobs where process is already dead)
-    await updateJob({
-      jobId,
-      status: 'error',
-      error: 'Manually stopped',
-      endedAt: new Date().toISOString(),
-    })
+    stopLocalJob(jobId)
   }
 
   const tabs = [
@@ -353,7 +212,7 @@ function App() {
 
   const activeJobs = [
     ...(optimisticJob ? [optimisticJob] : []),
-    ...jobs.filter(j => !optimisticJob || j.video_url !== optimisticJob.video_url),
+    ...localActiveJobs.filter(j => !optimisticJob || j.video_url !== optimisticJob.video_url),
   ]
   const recentCompleted = history.slice(0, 5)
 
@@ -523,7 +382,7 @@ function App() {
               </h2>
               {activeJobs.length === 0 ? (
                 <div className="bg-white/[0.03] border border-white/5 rounded-xl p-8 sm:p-12 text-center">
-                  <Inbox className="w-8 h-8 sm:w-10 sm:h-10 text-white/10 mx-auto mb-2 sm:mb-3" />
+                  <Inbox className="w-8 h-8 sm:w-10 sm:h-10 text-blue-400 mx-auto mb-2 sm:mb-3" />
                   <div className="text-white/30 text-xs sm:text-sm">No active jobs. Paste a URL above to start.</div>
                 </div>
               ) : (

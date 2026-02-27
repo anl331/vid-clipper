@@ -419,7 +419,7 @@ export default defineConfig({
               if (model_override) { args.push('--model-override', model_override) }
 
               // Create job in Convex immediately so dashboard shows it
-              const convexSiteUrl = process.env.CONVEX_SITE_URL || ''
+              const convexSiteUrl = process.env.CONVEX_SITE_URL || 'https://veracious-sardine-771.convex.site'
               const createPayload: Record<string, string> = { jobId, videoUrl: url }
               // Always store the effective model for display (override → else read settings.json)
               if (model_override) {
@@ -558,8 +558,7 @@ export default defineConfig({
 
               // 2. Delete from Convex
               try {
-                const convexCloudUrl = process.env.CONVEX_CLOUD_URL || ''
-                if (!convexCloudUrl) { results.push('Convex skipped (not configured)'); return }
+                const convexCloudUrl = process.env.CONVEX_CLOUD_URL || 'https://veracious-sardine-771.convex.cloud'
                 const resp = await fetch(`${convexCloudUrl}/api/mutation`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
