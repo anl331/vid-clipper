@@ -1037,6 +1037,8 @@ Return JSON object with "content_type" and "clips" keys. No markdown fences. Jus
 
 CRITICAL: "start" and "end" MUST be numbers in SECONDS (e.g., 56.0, 173.5). NOT timestamps like "00:56" or "01:04". Convert mm:ss to seconds yourself.
 
+The "title" field must be a SHORT, PUNCHY, DESCRIPTIVE title (3-8 words) that captures what the clip is actually about — like a YouTube video title or tweet. NEVER use generic names like "Clip 1", "Clip 2", "Part 1", or "Segment 3". The title must reflect the actual content of that specific clip.
+
 Also include "hook_score" (1-10) and "hook_reason" for the opening 5 seconds of each clip:
 - 8-10: Specific claim, shocking number, strong opinion, "here's what I did" — stops scrollers cold
 - 5-7: Decent setup but generic or needs context
@@ -1045,8 +1047,8 @@ Also include "hook_score" (1-10) and "hook_reason" for the opening 5 seconds of 
 Also include "peak_offset": seconds from the clip's start time to the single most compelling SPOKEN moment inside the clip — where the person says something shocking, controversial, emotional, or highly relatable. This 6-second snippet will be prepended as a teaser hook before the full clip plays. Requirements: (1) The person MUST be actively speaking — no silent pauses, no B-roll, no ambient noise. (2) Pick a moment where the spoken words alone would make someone stop scrolling — a bold claim, a surprising reveal, a strong opinion, a relatable frustration, or an emotional high point. (3) The offset must have at least 6 seconds of content remaining before the clip ends. Must be a number in seconds (e.g. 32.5). Set to null if no standout speech moment exists.
 
 {{"content_type": "rant", "clips": [
-  {{"start": 56.0, "end": 120.0, "title": "Short punchy title", "reason": "Why this works", "hook_score": 8, "hook_reason": "Opens with a shocking claim", "peak_offset": 38.0}},
-  {{"start": 200.0, "end": 265.0, "title": "Another title", "reason": "Why this works", "hook_score": 6, "hook_reason": "Good setup but slightly generic", "peak_offset": null}}
+  {{"start": 56.0, "end": 120.0, "title": "Why Most Traders Blow Up Before Lunch", "reason": "Why this works", "hook_score": 8, "hook_reason": "Opens with a shocking claim", "peak_offset": 38.0}},
+  {{"start": 200.0, "end": 265.0, "title": "The One Rule That Changes Everything", "reason": "Why this works", "hook_score": 6, "hook_reason": "Good setup but slightly generic", "peak_offset": null}}
 ]}}
 
 IMPORTANT: You MUST return EXACTLY {max_clips} clips if the video has enough content. Spread the clips across the ENTIRE video (beginning, middle, and end). Do not cluster all clips at the start. Each clip must be from a different section of the video. No overlapping clips. If the video is too short for {max_clips} non-overlapping clips that meet the duration rules, return as many as genuinely fit (minimum 1).
@@ -1099,6 +1101,19 @@ def _parse_moments(text: str, max_clips: int) -> tuple[list[dict], str]:
                 m[key] = secs
             elif isinstance(val, str):
                 m[key] = float(val)
+
+    # Sanitize generic titles like "Clip 1", "Part 2", "Segment 3", "Video Clip 4"
+    _generic_title = re.compile(r'^(clip|part|segment|video clip|excerpt)\s*\d+$', re.IGNORECASE)
+    for i, m in enumerate(moments):
+        title = m.get("title", "")
+        if not title or _generic_title.match(title.strip()):
+            # Build a fallback title from the reason field or just a numbered placeholder
+            reason = m.get("reason", "")
+            if reason and len(reason) > 10:
+                # Truncate reason to a punchy title-length string
+                m["title"] = reason[:60].rsplit(" ", 1)[0] if len(reason) > 60 else reason
+            else:
+                m["title"] = f"Moment {i + 1}"
 
     return moments[:max_clips], content_type
 
