@@ -22,3 +22,5 @@ dashboard/dist/
 
 # OS
 .DS_Store
+dashboard/.env.local
+dashboard/convex/_generated/
